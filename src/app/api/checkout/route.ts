@@ -115,6 +115,11 @@ export async function POST(request: Request) {
         askForShippingAddress: true,
         redirectUrl: `${origin}/checkout/success`,
         merchantSupportEmail: site.email,
+        acceptedPaymentMethods: {
+          applePay: true,
+          googlePay: true,
+          cashAppPay: true,
+        },
         shippingFee: {
           name: shippingCents === 0 ? "Free shipping" : "Standard shipping",
           charge: { amount: BigInt(shippingCents), currency: "USD" },
