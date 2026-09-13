@@ -111,21 +111,51 @@ Flat rate, set in `src/app/api/checkout/route.ts`:
 
 ```ts
 const SHIPPING = {
-  standardCents: 995,     // $9.95
+  standardCents: 1295,    // $12.95
   freeOverCents: 7500,    // free over $75
 };
 ```
 
-Adjust these once you know real postage costs.
+$12.95 is anchored to USPS's actual retail Small Priority Mail Flat Rate box
+price ($13.65 as of July 2026), assuming online/commercial rates run their
+usual 10–15% below retail. It's still an estimate — it assumes a filled order
+fits that box. Weigh a real packed order and check it against
+[Pirate Ship](https://ship.pirateship.com) or usps.com/business before launch,
+especially for larger or multi-box orders, or anything needing an ice pack in
+warm months (see the shipping policy in `src/lib/policies.ts`, which already
+mentions holding orders to avoid a hot weekend in transit).
 
 ### Sales tax
 
-Not enabled. Texas taxes candy — it isn't covered by the state's grocery
-exemption — so this is worth resolving before launch, not after. Square can
-calculate and collect tax automatically for registered sellers; check current
-support for automatic tax on payment links in the Square dashboard, or
-calculate it into `subtotalCents` server-side as a fallback. Talk to an
-accountant about registration and rate.
+**Not enabled — and this needs two things outside this codebase before it can
+be, not just a code change.**
+
+Texas taxes candy; it isn't covered by the state's grocery exemption. San
+Antonio's combined rate is 8.25% (6.25% state + 1% city + local additions —
+confirmed against [Avalara](https://www.avalara.com/taxrates/en/state-rates/texas/cities/san-antonio.html)
+and [TaxCloud](https://taxcloud.com/sales-tax/texas/bexar/san-antonio/), September 2026).
+
+1. **She needs a Texas Sales and Use Tax Permit** from the
+   [Texas Comptroller](https://comptroller.texas.gov/taxes/permit/) before
+   collecting anything. This is a business/legal step, not a code change —
+   an accountant can confirm whether she also owes tax in any other state she
+   ships to (unlikely at this order volume, but worth asking once).
+2. **Tax should then be configured in Square's own dashboard settings**
+   (Account & Settings → Business Information → Sales Tax), not hardcoded
+   here. The reason isn't laziness: this checkout route creates the Square
+   order *before* the buyer enters a shipping address, so it has no way to
+   know whether a given order is going to a Texas address (taxable) or
+   somewhere else (not, since she has no nexus there). Square's own checkout
+   page collects the address and can calculate tax against it in the moment,
+   which a flat rate baked into the API request cannot do correctly.
+   A rate hardcoded here would either overcharge every out-of-state customer
+   or undercollect from every Texas one.
+3. Once it's registered and configured, place one real test order to confirm
+   tax actually appears correctly on a Square-hosted payment link (this
+   project didn't confirm that specifically — see the note below).
+
+This is worth resolving before launch, not after — but it isn't a step I can
+finish alone, since it needs her Comptroller registration first.
 
 ## Deploying
 

@@ -13,9 +13,19 @@ import { site } from "@/lib/site";
  * the cart in localStorage or devtools cannot change what a shopper is charged.
  */
 
-/** Flat-rate domestic shipping. Adjust once real postage costs are known. */
+/**
+ * Flat-rate domestic shipping.
+ *
+ * $12.95 is anchored to a real number: USPS's retail Small Priority Mail
+ * Flat Rate box was $13.65 as of July 2026 (usps.com), with online/commercial
+ * rates (Pirate Ship, Shippo, Square's own shipping labels) typically 10–15%
+ * below retail. This still isn't final — it assumes the actual packed box
+ * fits a Small Flat Rate box. Weigh a real packed order and compare against
+ * https://ship.pirateship.com or usps.com/business before launch, especially
+ * for multi-box orders or anything needing an ice pack in warm months.
+ */
 const SHIPPING = {
-  standardCents: 995,
+  standardCents: 1295,
   /** Orders at or above this subtotal ship free. */
   freeOverCents: 7500,
 };
