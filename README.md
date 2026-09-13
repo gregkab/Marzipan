@@ -93,10 +93,12 @@ one does.
 ### Getting your Square credentials
 
 1. Create an app at [developer.squareup.com/apps](https://developer.squareup.com/apps).
-2. Its **Credentials** tab has a **Sandbox Access Token** (for testing) and,
-   once you flip the app to production, a **Production Access Token**.
-3. The same tab lists a **Location ID** — sandbox and production each have
-   their own. `SQUARE_LOCATION_ID` must match whichever token you're using.
+2. Its **Credentials** tab has a Production/Sandbox toggle in the lower-left
+   corner. Each mode has its own access token.
+3. The **Locations** tab (a separate tab from Credentials, same toggle) lists
+   a **Location ID** for each mode. `SQUARE_LOCATION_ID` must match whichever
+   token you're using — a sandbox token needs the sandbox location id, a
+   production token needs the production one.
 4. The access token her Square account already has for taking payments (from
    her existing Square usage) is a different thing from an app credential —
    this is a new app she authorizes to create payment links on her account's
