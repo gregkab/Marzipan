@@ -1,3 +1,222 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/*
+  Marlipan — "the confectioner's cabinet"
+
+  The palette comes off the product itself: almond paste, powdered sugar, the
+  green of a raw pistachio kernel, and a muted gilt borrowed from old sweet-shop
+  tins. Gilt is a hairline colour only — the moment it fills an area it stops
+  reading as a confectioner's mark and starts reading as a luxury template.
+*/
+@theme {
+  --color-sugar: #fcfaf4;
+  --color-sugar-warm: #f7f2e7;
+  --color-almond: #ede2ce;
+  --color-almond-deep: #ddcdb1;
+  --color-verd: #1c3b2a;
+  --color-verd-deep: #142a1e;
+  --color-pistachio: #7e9a4e;
+  --color-gilt: #a8823c;
+  --color-cherry: #8a2b36;
+  --color-ink: #221f1a;
+  --color-ink-soft: #5f584c;
+
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-body: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-data: var(--font-anonymous), ui-monospace, "SF Mono", monospace;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+body {
+  background: var(--color-sugar);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Fraunces ships optical-size, softness and "wonk" axes. Dialling softness and
+   wonk up gives the display face a hand-cut wobble that suits sugar shaped by
+   hand; without them it reads like any other high-contrast serif. */
+.font-display,
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 40, "WONK" 1, "opsz" 60;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
+
+/* ——— The specimen label ———————————————————————————————————
+   The signature device. Every product carries a line of real catalogue data
+   (pieces · net weight · composition) set in the monospace face, the way a
+   confectioner's case labels what's under the glass. */
+.specimen {
+  font-family: var(--font-data);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+
+.eyebrow {
+  font-family: var(--font-data);
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-gilt);
+}
+
+.eyebrow-line {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.eyebrow-line::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--color-gilt) 45%, transparent);
+}
+
+/* A plinth is the pale block a product photo sits on, with a gilt hairline —
+   an object in a case rather than a card on a grid. */
+.plinth {
+  background: var(--color-almond);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-gilt) 30%, transparent);
+}
+
+.rule-gilt {
+  border-color: color-mix(in srgb, var(--color-gilt) 35%, transparent);
+}
+
+/* ——— Controls ————————————————————————————————————————— */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-data);
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 0.9375rem 1.75rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-solid {
+  background: var(--color-verd);
+  color: var(--color-sugar);
+}
+
+.btn-solid:hover:not(:disabled) {
+  background: var(--color-verd-deep);
+}
+
+.btn-outline {
+  border-color: color-mix(in srgb, var(--color-ink) 25%, transparent);
+  color: var(--color-ink);
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--color-verd);
+  background: var(--color-verd);
+  color: var(--color-sugar);
+}
+
+/* Keyboard focus has to stay visible everywhere, including on the green bands. */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-gilt);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+.on-verd :where(a, button, input, select):focus-visible {
+  outline-color: var(--color-almond);
+}
+
+/* ——— Scroll reveal ———————————————————————————————————— */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Body copy inside long-form pages (story, policies). */
+.prose-marlipan p {
+  color: var(--color-ink-soft);
+  line-height: 1.75;
+  margin-bottom: 1.25rem;
+}
+
+.prose-marlipan h2 {
+  font-size: 1.5rem;
+  margin: 2.5rem 0 1rem;
+  color: var(--color-ink);
+}
+
+.prose-marlipan ul {
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.prose-marlipan li {
+  color: var(--color-ink-soft);
+  line-height: 1.7;
+  padding-left: 1.5rem;
+  margin-bottom: 0.625rem;
+  position: relative;
+}
+
+.prose-marlipan li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 0.5rem;
+  height: 1px;
+  background: var(--color-gilt);
+}
