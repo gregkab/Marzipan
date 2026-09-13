@@ -9,7 +9,7 @@
  */
 
 export type Variant = {
-  /** Stable id. Used as the cart key and sent to Stripe. Never reuse one. */
+  /** Stable id. Used as the cart key and sent to Square at checkout. Never reuse one. */
   id: string;
   /** Shown in the variant picker. Omit the picker entirely when there's one. */
   label: string;

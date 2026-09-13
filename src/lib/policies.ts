@@ -3,7 +3,7 @@ import { site } from "./site";
 /**
  * Policy copy. The refund policy is Marlipan's own long-standing wording; the
  * shipping, privacy and terms pages are written for this site and reference
- * Stripe as the payment processor rather than Shopify.
+ * Square as the payment processor rather than Shopify.
  *
  * These are plain-language starting points, not legal advice — have them
  * reviewed before launch, and keep `updated` current when they change.
@@ -93,7 +93,7 @@ const policies: Policy[] = [
       {
         heading: "Payment information",
         body: [
-          "We never see or store your card details. Payments are processed by Stripe, which collects your card information directly and is responsible for handling it securely. Stripe's own privacy policy governs that data.",
+          "We never see or store your card details. Payments are processed by Square, which collects your card information directly and is responsible for handling it securely. Square's own privacy policy governs that data.",
         ],
       },
       {

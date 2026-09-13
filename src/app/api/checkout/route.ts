@@ -1,10 +1,12 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
+import { SquareClient, SquareEnvironment, SquareError } from "square";
 import { findVariant } from "@/lib/products";
 import { site } from "@/lib/site";
 
 /**
- * Creates a Stripe Checkout Session for the cart and returns its URL.
+ * Creates a Square-hosted checkout page (a "payment link") for the cart and
+ * returns its URL.
  *
  * The request body carries only variant ids and quantities. Every price, name
  * and weight is looked up from our own catalog here on the server, so editing
@@ -16,8 +18,6 @@ const SHIPPING = {
   standardCents: 995,
   /** Orders at or above this subtotal ship free. */
   freeOverCents: 7500,
-  minDays: 3,
-  maxDays: 6,
 };
 
 const MAX_QUANTITY_PER_LINE = 99;
@@ -25,11 +25,14 @@ const MAX_QUANTITY_PER_LINE = 99;
 type RequestBody = { lines?: { variantId?: unknown; quantity?: unknown }[] };
 
 export async function POST(request: Request) {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
+  const accessToken = process.env.SQUARE_ACCESS_TOKEN;
+  const locationId = process.env.SQUARE_LOCATION_ID;
+  if (!accessToken || !locationId) {
     // Missing configuration is our problem, not the shopper's — but don't leak
     // details to the browser.
-    console.error("STRIPE_SECRET_KEY is not set; cannot create a checkout session.");
+    console.error(
+      "SQUARE_ACCESS_TOKEN / SQUARE_LOCATION_ID is not set; cannot create a checkout link."
+    );
     return NextResponse.json(
       { error: "Checkout is not configured yet." },
       { status: 503 }
@@ -47,7 +50,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
   }
 
-  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+  const lineItems: {
+    name: string;
+    quantity: string;
+    basePriceMoney: { amount: bigint; currency: "USD" };
+  }[] = [];
   let subtotalCents = 0;
 
   for (const line of body.lines) {
@@ -72,69 +79,60 @@ export async function POST(request: Request) {
     subtotalCents += variant.priceCents * quantity;
 
     lineItems.push({
-      quantity,
-      price_data: {
-        currency: "usd",
-        unit_amount: variant.priceCents,
-        product_data: {
-          name:
-            product.variants.length > 1
-              ? `${product.name} — ${variant.label}`
-              : product.name,
-          description: product.tagline,
-          images: [`${site.url}${product.images[0].src}`],
-          metadata: { handle: product.handle, variantId: variant.id },
-        },
-      },
+      name:
+        product.variants.length > 1
+          ? `${product.name} — ${variant.label}`
+          : product.name,
+      quantity: String(quantity),
+      basePriceMoney: { amount: BigInt(variant.priceCents), currency: "USD" },
     });
   }
 
   const shippingCents =
     subtotalCents >= SHIPPING.freeOverCents ? 0 : SHIPPING.standardCents;
 
-  const stripe = new Stripe(secretKey);
   const origin =
     request.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? site.url;
 
+  const client = new SquareClient({
+    token: accessToken,
+    environment:
+      process.env.SQUARE_ENVIRONMENT === "production"
+        ? SquareEnvironment.Production
+        : SquareEnvironment.Sandbox,
+  });
+
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: lineItems,
-      success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/cart`,
-      // Marzipan is perishable and made to order, so we ship domestically only.
-      shipping_address_collection: { allowed_countries: ["US"] },
-      phone_number_collection: { enabled: true },
-      allow_promotion_codes: true,
-      shipping_options: [
-        {
-          shipping_rate_data: {
-            type: "fixed_amount",
-            display_name:
-              shippingCents === 0 ? "Free shipping" : "Standard shipping",
-            fixed_amount: { amount: shippingCents, currency: "usd" },
-            delivery_estimate: {
-              minimum: { unit: "business_day", value: SHIPPING.minDays },
-              maximum: { unit: "business_day", value: SHIPPING.maxDays },
-            },
-          },
-        },
-      ],
-      custom_text: {
-        submit: {
-          message:
-            "Everything is handmade to order. Please allow 2 business days for processing before your order ships.",
+    const response = await client.checkout.paymentLinks.create({
+      // A fresh key per request — retries of the same submission (a double
+      // click, a flaky connection) must not create two payment links.
+      idempotencyKey: randomUUID(),
+      order: {
+        locationId,
+        lineItems,
+      },
+      checkoutOptions: {
+        askForShippingAddress: true,
+        redirectUrl: `${origin}/checkout/success`,
+        merchantSupportEmail: site.email,
+        shippingFee: {
+          name: shippingCents === 0 ? "Free shipping" : "Standard shipping",
+          charge: { amount: BigInt(shippingCents), currency: "USD" },
         },
       },
     });
 
-    if (!session.url) {
-      throw new Error("Stripe returned a session without a URL.");
+    const url = response.paymentLink?.url;
+    if (!url) {
+      throw new Error("Square returned a payment link without a URL.");
     }
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url });
   } catch (cause) {
-    console.error("Failed to create Stripe checkout session:", cause);
+    console.error(
+      "Failed to create Square checkout link:",
+      cause instanceof SquareError ? cause.body : cause
+    );
     return NextResponse.json(
       { error: "We couldn't start checkout." },
       { status: 502 }
